@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentence Scramble</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@dragdroptouch/drag-drop-touch@latest/dist/drag-drop-touch.esm.min.js" type="module"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .tile { cursor: grab; transition: transform 0.1s, box-shadow 0.1s, background-color 0.2s; user-select: none; touch-action: none;}
+        .tile:active { cursor: grabbing; transform: scale(1.05); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .drop-zone { min-height: 80px; transition: background-color 0.2s; }
+        .drop-zone.drag-over { background-color: #e0e7ff; border-color: #6366f1; }
+        .tile.correct { background-color: #bbf7d0 !important; color: #166534 !important; border-color: #22c55e !important; }
+        .tile.incorrect { background-color: #fecaca !important; color: #991b1b !important; border-color: #ef4444 !important; }
+        .flag-btn { transition: transform 0.2s; font-size: 1.5rem; background: none; border: none; cursor: pointer; padding: 4px; }
+        .flag-btn:hover { transform: scale(1.2); }
+    </style>
+</head>
+<body class="min-h-screen text-gray-800 p-4 md:p-8 flex items-center justify-center">
+
+    <div class="max-w-4xl w-full bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+        <div class="bg-gray-50 px-6 py-3 border-b border-gray-100 flex justify-center gap-4 flex-wrap">
+            <button class="flag-btn" onclick="changeLanguage('es')" title="Spanish"><svg viewBox="0 0 3 2" class="w-8 h-6 rounded-sm shadow-sm"><rect width="3" height="2" fill="#c60b1e"/><rect width="3" height="1" y="0.5" fill="#ffc400"/></svg></button>
+            <button class="flag-btn" onclick="changeLanguage('en')" title="English"><svg viewBox="0 0 60 30" class="w-8 h-6 rounded-sm shadow-sm"><clipPath id="s2"><path d="M0,0 v30 h60 v-30 z"/></clipPath><clipPath id="t2"><path d="M30,15 h30 v15 z v-30 h-60 v30 z"/></clipPath><g clip-path="url(#s2)"><path d="M0,0 v30 h60 v-30 z" fill="#012169"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" clip-path="url(#t2)" stroke="#C8102E" stroke-width="4"/><path d="M30,0 v30 M0,15 h60" stroke="#fff" stroke-width="10"/><path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"/></g></svg></button>
+            <button class="flag-btn" onclick="changeLanguage('fr')" title="French"><svg viewBox="0 0 3 2" class="w-8 h-6 rounded-sm shadow-sm"><rect width="3" height="2" fill="#ed2939"/><rect width="2" height="2" fill="#fff"/><rect width="1" height="2" fill="#002395"/></svg></button>
+            <button class="flag-btn" onclick="changeLanguage('de')" title="German"><svg viewBox="0 0 3 2" class="w-8 h-6 rounded-sm shadow-sm"><rect width="3" height="2" fill="#ffce00"/><rect width="3" height="1.333" fill="#dd0000"/><rect width="3" height="0.667" fill="#000"/></svg></button>
+            <button class="flag-btn" onclick="changeLanguage('pt')" title="Portuguese"><svg viewBox="0 0 10 7" class="w-8 h-6 rounded-sm shadow-sm"><rect width="10" height="7" fill="#009c3b"/><path d="M1.7,3.5 L5,0.8 L8.3,3.5 L5,6.2 Z" fill="#ffdf00"/><circle cx="5" cy="3.5" r="1.5" fill="#002776"/></svg></button>
+            <button class="flag-btn" onclick="changeLanguage('zh')" title="Chinese"><svg viewBox="0 0 30 20" class="w-8 h-6 rounded-sm shadow-sm"><rect width="30" height="20" fill="#ee1c25"/><path d="M5,5 l1.5,4.5 h-4.7 l3.8,2.8 l-1.5,4.5 l3.9,-2.8 l3.9,2.8 l-1.5,-4.5 l3.8,-2.8 h-4.7 z" fill="#ff0"/></svg></button>
+            <button class="flag-btn" onclick="changeLanguage('ja')" title="Japanese"><svg viewBox="0 0 3 2" class="w-8 h-6 rounded-sm shadow-sm border border-gray-200"><rect width="3" height="2" fill="#fff"/><circle cx="1.5" cy="1" r="0.6" fill="#bc002d"/></svg></button>
+            <button class="flag-btn" onclick="changeLanguage('ko')" title="Korean"><svg viewBox="0 0 3 2" class="w-8 h-6 rounded-sm shadow-sm border border-gray-200"><rect width="3" height="2" fill="#fff"/><circle cx="1.5" cy="1" r="0.6" fill="#cd2e3a"/><path d="M0.9,1 a0.6,0.6 0 0,0 1.2,0 a0.3,0.3 0 0,1 -0.6,0 a0.3,0.3 0 0,0 -0.6,0" fill="#0047a0"/></svg></button>
+        </div>
+
+        <div class="p-6 md:p-8">
+            <div class="text-center mb-8">
+                <h2 id="puzzle-counter" class="text-xl font-bold text-gray-400 uppercase tracking-wider mb-3"></h2>
+                <p id="game-instructions" class="text-xl md:text-2xl font-medium text-gray-800"></p>
+            </div>
+
+            <div class="mb-8">
+                <div id="board" class="drop-zone min-h-[100px] bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-4 flex flex-wrap gap-3 items-center justify-center shadow-inner"></div>
+            </div>
+
+            <div class="mb-10">
+                <div id="pool" class="drop-zone min-h-[100px] bg-blue-50 border-2 border-blue-100 rounded-xl p-4 flex flex-wrap gap-3 items-center justify-center"></div>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-center gap-4">
+                <button id="prev-btn" class="flex items-center justify-center gap-2 px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-bold transition-colors hidden"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg></button>
+                <button id="reset-btn" class="flex items-center justify-center gap-2 px-5 py-3 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 rounded-lg font-bold transition-colors shadow-sm"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg></button>
+                <button id="reveal-btn" class="flex items-center justify-center gap-2 px-5 py-3 bg-gray-800 hover:bg-gray-900 text-white rounded-lg font-bold transition-colors shadow-sm"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg></button>
+                <button id="check-btn" class="flex items-center justify-center gap-2 px-8 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-bold transition-colors shadow-md text-lg"><svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg></button>
+                <button id="next-btn" class="flex items-center justify-center gap-2 px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-bold transition-colors shadow-md hidden"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg></button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Injecting the data from the creator tool
+        const sentences = ["Por la noche, leo un libro o veo una serie.","Finalmente, me voy a la cama y me preparo para dormir."];
+        const preloadedTranslations = {"es":"Arrastra y suelta las palabras en el orden correcto a continuación:","en":"Drag and drop the words into the correct order below:","fr":"Faites glisser et déposez les mots dans le bon ordre ci-dessous :","de":"Ziehen Sie die Wörter unten in die richtige Reihenfolge:","pt":"Arraste e solte as palavras na ordem correta abaixo:","zh":"将单词拖放到下方正确的顺序中：","ja":"下の単語を正しい順序にドラッグアンドドロップします。","ko":"아래의 단어를 올바른 순서로 드래그 앤 드롭하세요:"};
+        const baseInstruction = "Arrastra y suelta las palabras en el orden correcto a continuación:";
+        
+        let currentPuzzleIndex = 0;
+        let originalWords = [];
+        let draggedElement = null;
+
+        const gameInstructions = document.getElementById('game-instructions');
+        const puzzleCounter = document.getElementById('puzzle-counter');
+        const board = document.getElementById('board');
+        const pool = document.getElementById('pool');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const revealBtn = document.getElementById('reveal-btn');
+        const checkBtn = document.getElementById('check-btn');
+
+        window.changeLanguage = function(lang) {
+            gameInstructions.innerText = preloadedTranslations[lang] || baseInstruction;
+        };
+
+        function renderPuzzle(index) {
+            puzzleCounter.innerText = `Puzzle ${index + 1} of ${sentences.length}`;
+            changeLanguage('es');
+
+            const rawSentence = sentences[index];
+            const regex = /[^\s.,!?;:¿¡"'-]+|[.,!?;:¿¡"'-]/g;
+            originalWords = rawSentence.match(regex) || [];
+
+            let scrambled = [...originalWords];
+            let attempts = 0;
+            do {
+                scrambled.sort(() => Math.random() - 0.5);
+                attempts++;
+            } while (JSON.stringify(scrambled) === JSON.stringify(originalWords) && attempts < 10 && scrambled.length > 1);
+
+            board.innerHTML = '';
+            pool.innerHTML = '';
+
+            scrambled.forEach((word, i) => {
+                const tile = document.createElement('div');
+                tile.className = 'tile bg-white border border-gray-300 shadow-sm rounded-lg px-4 py-2 text-xl font-medium text-gray-800';
+                tile.innerText = word;
+                tile.draggable = true;
+                pool.appendChild(tile);
+            });
+
+            prevBtn.classList.toggle('hidden', index === 0);
+            nextBtn.classList.toggle('hidden', index === sentences.length - 1);
+            setupDragEvents();
+        }
+
+        function setupDragEvents() {
+            const tiles = document.querySelectorAll('.tile');
+            const zones = [board, pool];
+
+            tiles.forEach(tile => {
+                tile.addEventListener('dragstart', (e) => {
+                    draggedElement = tile;
+                    e.dataTransfer.setData('text/plain', '');
+                    setTimeout(() => tile.style.opacity = '0.5', 0);
+                    document.querySelectorAll('.tile').forEach(t => t.classList.remove('correct', 'incorrect'));
+                });
+                tile.addEventListener('dragend', () => {
+                    tile.style.opacity = '1';
+                    draggedElement = null;
+                    zones.forEach(z => z.classList.remove('drag-over'));
+                });
+            });
+
+            zones.forEach(zone => {
+                zone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    zone.classList.add('drag-over');
+                    if (draggedElement) {
+                        const afterElement = getDragAfterElement(zone, e.clientX, e.clientY);
+                        if (afterElement == null) {
+                            zone.appendChild(draggedElement);
+                        } else {
+                            zone.insertBefore(draggedElement, afterElement);
+                        }
+                    }
+                });
+                zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+                zone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    zone.classList.remove('drag-over');
+                });
+            });
+        }
+
+        function getDragAfterElement(container, x, y) {
+            const draggableElements = [...container.querySelectorAll('.tile:not([style*="opacity: 0.5"])')];
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offsetX = x - box.left - box.width / 2;
+                const offsetY = y - box.top - box.height / 2;
+                if (offsetY < 0 && offsetY > closest.offsetY) return { offset: offsetY, element: child, offsetY: offsetY };
+                else if (Math.abs(offsetY) < box.height/2 && offsetX < 0 && offsetX > closest.offsetX) return { offset: offsetX, element: child, offsetX: offsetX, offsetY: offsetY };
+                return closest;
+            }, { offset: Number.NEGATIVE_INFINITY, offsetX: Number.NEGATIVE_INFINITY, offsetY: Number.NEGATIVE_INFINITY }).element;
+        }
+
+        checkBtn.addEventListener('click', () => {
+            const currentTiles = Array.from(board.children);
+            if (currentTiles.length !== originalWords.length) {
+                alert("Please place all words on the board first!");
+                return;
+            }
+            currentTiles.forEach((tile, index) => {
+                tile.classList.remove('correct', 'incorrect');
+                if (tile.innerText === originalWords[index]) tile.classList.add('correct');
+                else tile.classList.add('incorrect');
+            });
+        });
+
+        resetBtn.addEventListener('click', () => renderPuzzle(currentPuzzleIndex));
+        
+        revealBtn.addEventListener('click', () => {
+            board.innerHTML = '';
+            pool.innerHTML = '';
+            originalWords.forEach((word) => {
+                const tile = document.createElement('div');
+                tile.className = 'tile bg-white border border-gray-300 shadow-sm rounded-lg px-4 py-2 text-xl font-medium text-gray-800 correct';
+                tile.innerText = word;
+                tile.draggable = true;
+                board.appendChild(tile);
+            });
+            setupDragEvents();
+        });
+
+        prevBtn.addEventListener('click', () => { if (currentPuzzleIndex > 0) { currentPuzzleIndex--; renderPuzzle(currentPuzzleIndex); } });
+        nextBtn.addEventListener('click', () => { if (currentPuzzleIndex < sentences.length - 1) { currentPuzzleIndex++; renderPuzzle(currentPuzzleIndex); } });
+
+        // Start game
+        renderPuzzle(0);
+    </script>
+</body>
+</html>
